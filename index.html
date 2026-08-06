@@ -1,13 +1,29 @@
-import { useState, useEffect } from "react";
-import {
-  Car, MapPin, Calendar, Navigation, Users, Lock, Check, X,
-  Plus, ChevronLeft, Send, Clock, ShieldCheck, LogOut, Menu, Flame
-} from "lucide-react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>TBULD — Tampa Bay Uber Lyft Drivers</title>
+<link rel="apple-touch-icon" href="data:,">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body, #root { height: 100%; margin: 0; }
+  body { font-family: 'Manrope', system-ui, sans-serif; background: #1B1440; }
+  textarea, input { font-family: 'Manrope', system-ui, sans-serif; }
+  ::placeholder { color: rgba(255,246,236,0.4); }
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
 
-const FONT_IMPORT = `
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-`;
-
+<script type="text/babel" data-type="module">
+const { useState, useEffect } = React;
 
 const TOKENS = {
   bgDeep: "#1B1440",
@@ -19,97 +35,84 @@ const TOKENS = {
   amber: "#FFB800",
   cream: "#FFF6EC",
 };
-
 const SUNSET_BG = `linear-gradient(180deg, ${TOKENS.bgDeep} 0%, ${TOKENS.bgDeep2} 32%, ${TOKENS.sunRed} 68%, ${TOKENS.sunOrange} 100%)`;
-const SUNSET_TEXT = `linear-gradient(90deg, ${TOKENS.sunOrange}, ${TOKENS.pink})`;
 
-function Skyline() {
-  // Silhouette strip: skyline + bridge + palm trees, echoing the FB cover
-  return (
-    <svg viewBox="0 0 400 60" className="w-full h-14" preserveAspectRatio="none" aria-hidden="true">
-      <rect x="0" y="30" width="18" height="30" fill="#150C2E" />
-      <rect x="22" y="18" width="14" height="42" fill="#150C2E" />
-      <rect x="40" y="26" width="16" height="34" fill="#150C2E" />
-      <path d="M60 60 L60 34 Q100 14 140 34 L140 60 Z" fill="#150C2E" />
-      <rect x="150" y="22" width="12" height="38" fill="#150C2E" />
-      <rect x="166" y="30" width="10" height="30" fill="#150C2E" />
-      {/* palm tree */}
-      <g fill="#150C2E">
-        <rect x="190" y="34" width="4" height="26" />
-        <path d="M192 34 Q178 26 172 30 Q184 30 192 38" />
-        <path d="M192 34 Q206 24 214 28 Q200 30 192 38" />
-        <path d="M192 34 Q182 20 186 12 Q194 24 192 38" />
-      </g>
-      <rect x="230" y="20" width="14" height="40" fill="#150C2E" />
-      <rect x="248" y="28" width="16" height="32" fill="#150C2E" />
-      <g fill="#150C2E">
-        <rect x="290" y="34" width="4" height="26" />
-        <path d="M292 34 Q278 26 272 30 Q284 30 292 38" />
-        <path d="M292 34 Q306 24 314 28 Q300 30 292 38" />
-      </g>
-      <rect x="330" y="24" width="12" height="36" fill="#150C2E" />
-      <rect x="346" y="16" width="14" height="44" fill="#150C2E" />
-      <rect x="364" y="30" width="16" height="30" fill="#150C2E" />
-    </svg>
-  );
+const STORAGE_KEY = "tbuld_app_data_v1";
+
+const DEFAULT_DATA = {
+  events: [
+    { id: "e1", posted: "This week",
+      body: "Reggae Rise Up Fest — Raymond James Stadium lot, Fri–Sun nights\nTampa Bay Lightning vs Panthers — Amalie Arena, Thu 7pm\nOrlando Magic home game — Kia Center, Sat 7:30pm\nMatt Rife comedy — Yuengling Center, Fri 8pm" }
+  ],
+  traffic: { updated: "Today",
+    body: "I-4 westbound construction near Dale Mabry, expect delays 3–7pm.\nGandy Bridge slow both directions during Lightning game traffic.\nAvoid Selmon Expressway exit 3 after 9pm Fri/Sat — event backup." },
+  whereToWork: { updated: "Today",
+    body: "Downtown Tampa: strong after 6pm, event traffic tonight.\nIVE / Ybor: good weekend late-night pickups.\nOrlando I-Drive: steady all day, airport runs pay well before noon." },
+  buzz: [
+    { id: "b1", tag: "PLATFORM MOVE", headline: "Lyft hands drivers more control over their app",
+      body: "Lyft is rolling back its black-box dispatch system, letting drivers pick trip types, stack incentives, and manage their own territory instead of just taking whatever the algorithm sends.",
+      source: "The Rideshare Guy" },
+    { id: "b2", tag: "MONEY", headline: "Drivers cashing in on a $328M back-pay settlement",
+      body: "Uber and Lyft settled with regulators after years of shorting driver pay — checks are going out to eligible drivers now.",
+      source: "CBS News" },
+    { id: "b3", tag: "ROBOTAXI WATCH", headline: "Driverless cars are creeping into more cities",
+      body: "Uber and Lyft are both quietly building robotaxi partnerships, testing autonomous rides in select markets while still relying on human drivers everywhere else — for now.",
+      source: "NewsNation" },
+    { id: "b4", tag: "TAX SEASON", headline: "New tip deduction could put real money back in your pocket",
+      body: "A new federal deduction lets self-employed drivers write off up to $25,000 a year in reported tips — worth checking with your tax person before filing.",
+      source: "Jackson Hewitt" }
+  ],
+  drivers: [{ id: "d1", name: "Marcus D.", phone: "813-555-0110", status: "pending" }],
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_DATA;
+  } catch { return DEFAULT_DATA; }
+}
+function saveData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
-function ConvoyStrip({ count = 7 }) {
+function Icon({ children, size=20 }) {
+  return <span style={{fontSize:size, lineHeight:1, display:"inline-block"}}>{children}</span>;
+}
+
+function ConvoyStrip({ count=9 }) {
   const colors = [TOKENS.sunOrange, TOKENS.pink, TOKENS.amber];
   return (
-    <div className="flex items-center gap-1.5 opacity-90" aria-hidden="true">
-      {Array.from({ length: count }).map((_, i) => (
-        <Car
-          key={i}
-          size={12}
-          strokeWidth={2.5}
-          style={{
-            color: colors[i % colors.length],
-            transform: `translateY(${i % 2 === 0 ? 0 : 2}px)`,
-          }}
-        />
+    <div style={{display:"flex",gap:6,opacity:0.9}}>
+      {Array.from({length:count}).map((_,i)=>(
+        <span key={i} style={{color:colors[i%3], fontSize:12}}>🚗</span>
       ))}
     </div>
   );
 }
 
-function Wordmark({ size = "text-4xl" }) {
+function Wordmark({ size="32px" }) {
   return (
     <div>
-      <div
-        className={`${size} tracking-tight uppercase leading-none font-extrabold`}
-        style={{
-          fontFamily: "'Manrope', system-ui",
-          color: TOKENS.cream,
-        }}
-      >
+      <div style={{fontSize:size, fontWeight:800, letterSpacing:"-0.01em", color:TOKENS.cream, textTransform:"uppercase", lineHeight:1}}>
         TBULD
       </div>
-      <div
-        className="text-[10px] tracking-[0.2em] uppercase mt-1 font-bold"
-        style={{ color: TOKENS.pinkLight }}
-      >
+      <div style={{fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", marginTop:4, fontWeight:700, color:TOKENS.pinkLight}}>
         Tampa Bay · Uber &amp; Lyft Drivers
       </div>
     </div>
   );
 }
 
-function PrimaryButton({ children, onClick, disabled, className = "" }) {
+function PrimaryButton({ children, onClick, disabled }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`w-full py-3.5 rounded-md font-bold text-base transition active:scale-[0.98] disabled:opacity-40 ${className}`}
+    <button onClick={onClick} disabled={disabled}
       style={{
-        background: disabled
-          ? "#4a3a5c"
-          : `linear-gradient(135deg, ${TOKENS.sunOrange}, ${TOKENS.pink})`,
-        color: TOKENS.cream,
-        fontFamily: "'Manrope', system-ui",
+        width:"100%", padding:"14px", borderRadius:12, fontWeight:800, fontSize:16,
+        border:"none", color:TOKENS.cream,
+        background: disabled ? "#4a3a5c" : `linear-gradient(135deg, ${TOKENS.sunOrange}, ${TOKENS.pink})`,
         boxShadow: disabled ? "none" : `0 6px 20px -6px ${TOKENS.sunRed}99`,
-      }}
-    >
+        opacity: disabled ? 0.4 : 1,
+      }}>
       {children}
     </button>
   );
@@ -117,389 +120,168 @@ function PrimaryButton({ children, onClick, disabled, className = "" }) {
 
 function Screen({ children }) {
   return (
-    <div
-      className="w-full h-full flex flex-col relative overflow-hidden"
-      style={{
-        background: SUNSET_BG,
-        fontFamily: "'Manrope', system-ui",
-      }}
-    >
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.05] mix-blend-overlay"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }}
-      />
-      <div className="relative flex-1 flex flex-col min-h-0">{children}</div>
+    <div style={{width:"100%", minHeight:"100vh", display:"flex", flexDirection:"column", background:SUNSET_BG}}>
+      {children}
     </div>
   );
 }
 
 function TopBar({ title, onBack, right }) {
   return (
-    <div className="flex items-center justify-between px-5 pt-6 pb-4">
-      <button
-        onClick={onBack}
-        className="w-9 h-9 rounded-full flex items-center justify-center"
-        style={{ background: "rgba(255,255,255,0.08)" }}
-      >
-        <ChevronLeft size={20} color={TOKENS.cream} />
-      </button>
-      <div
-        className="font-bold text-sm uppercase tracking-wider"
-        style={{ color: TOKENS.pinkLight }}
-      >
-        {title}
-      </div>
-      <div className="w-9 h-9 flex items-center justify-center">{right}</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"24px 20px 16px"}}>
+      <button onClick={onBack} style={{width:36,height:36,borderRadius:999,border:"none",background:"rgba(255,255,255,0.08)",color:TOKENS.cream,fontSize:18}}>‹</button>
+      <div style={{fontWeight:800,fontSize:13,textTransform:"uppercase",letterSpacing:"0.05em",color:TOKENS.pinkLight}}>{title}</div>
+      <div style={{width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>{right}</div>
     </div>
   );
 }
 
-const STORAGE_KEY = "tbuld-app-data";
-
-const DEFAULT_DATA = {
-  events: [
-    {
-      id: "e1",
-      posted: "This week",
-      body:
-        "Reggae Rise Up Fest — Raymond James Stadium lot, Fri–Sun nights\nTampa Bay Lightning vs Panthers — Amalie Arena, Thu 7pm\nOrlando Magic home game — Kia Center, Sat 7:30pm\nMatt Rife comedy — Yuengling Center, Fri 8pm",
-    },
-  ],
-  traffic: {
-    updated: "Today",
-    body:
-      "I-4 westbound construction near Dale Mabry, expect delays 3–7pm.\nGandy Bridge slow both directions during Lightning game traffic.\nAvoid Selmon Expressway exit 3 after 9pm Fri/Sat — event backup.",
-  },
-  whereToWork: {
-    updated: "Today",
-    body:
-      "Downtown Tampa: strong after 6pm, event traffic tonight.\nIVE / Ybor: good weekend late-night pickups.\nOrlando I-Drive: steady all day, airport runs pay well before noon.",
-  },
-  buzz: [
-    {
-      id: "b1",
-      tag: "PLATFORM MOVE",
-      headline: "Lyft hands drivers more control over their app",
-      body:
-        "Lyft is rolling back its black-box dispatch system, letting drivers pick trip types, stack incentives, and manage their own territory instead of just taking whatever the algorithm sends.",
-      source: "The Rideshare Guy",
-    },
-    {
-      id: "b2",
-      tag: "MONEY",
-      headline: "Drivers cashing in on a $328M back-pay settlement",
-      body:
-        "Uber and Lyft settled with regulators after years of shorting driver pay — checks are going out to eligible drivers now.",
-      source: "CBS News",
-    },
-    {
-      id: "b3",
-      tag: "ROBOTAXI WATCH",
-      headline: "Driverless cars are creeping into more cities",
-      body:
-        "Uber and Lyft are both quietly building robotaxi partnerships, testing autonomous rides in select markets while still relying on human drivers everywhere else — for now.",
-      source: "NewsNation",
-    },
-    {
-      id: "b4",
-      tag: "TAX SEASON",
-      headline: "New tip deduction could put real money back in your pocket",
-      body:
-        "A new federal deduction lets self-employed drivers write off up to $25,000 a year in reported tips — worth checking with your tax person before filing.",
-      source: "Jackson Hewitt",
-    },
-  ],
-  drivers: [{ id: "d1", name: "Marcus D.", phone: "813-555-0110", status: "pending" }],
-};
-
-async function loadData() {
-  try {
-    const r = await window.storage.get(STORAGE_KEY, true);
-    return r ? JSON.parse(r.value) : DEFAULT_DATA;
-  } catch {
-    return DEFAULT_DATA;
-  }
-}
-async function saveData(data) {
-  try {
-    await window.storage.set(STORAGE_KEY, JSON.stringify(data), true);
-  } catch {}
-}
-
-export default function TBULDApp() {
-  const [data, setData] = useState(null);
+function App() {
+  const [data, setData] = useState(loadData());
   const [route, setRoute] = useState("welcome");
   const [role, setRole] = useState(null);
   const [me, setMe] = useState(null);
   const [signupName, setSignupName] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
-  const [draft, setDraft] = useState({ events: "", traffic: "", whereToWork: "", buzz: "" });
+  const [draft, setDraft] = useState({ events:"", traffic:"", whereToWork:"", buzz:"" });
 
-  useEffect(() => {
-    loadData().then(setData);
-  }, []);
+  useEffect(() => { saveData(data); }, [data]);
 
-  if (!data) {
-    return (
-      <Screen>
-        <div className="flex-1 flex items-center justify-center">
-          <ConvoyStrip />
-        </div>
-      </Screen>
-    );
-  }
+  const update = (next) => setData(next);
+  const approvedDrivers = data.drivers.filter(d => d.status === "approved");
+  const pendingDrivers = data.drivers.filter(d => d.status === "pending");
 
-  const update = (next) => {
-    setData(next);
-    saveData(next);
-  };
+  const cardStyle = { background:"rgba(255,255,255,0.06)", borderRadius:12, border:"1px solid rgba(255,255,255,0.08)" };
+  const inputStyle = { width:"100%", padding:"14px 16px", borderRadius:12, border:"none", outline:"none", fontSize:14, fontWeight:600, background:"rgba(255,255,255,0.08)", color:TOKENS.cream };
 
-  const approvedDrivers = data.drivers.filter((d) => d.status === "approved");
-  const pendingDrivers = data.drivers.filter((d) => d.status === "pending");
-
-  // ---------- WELCOME ----------
   if (route === "welcome") {
     return (
       <Screen>
-        <div className="flex-1 flex flex-col justify-between px-6 py-10">
+        <div style={{flex:1, display:"flex", flexDirection:"column", justifyContent:"space-between", padding:"40px 24px"}}>
           <div />
           <div>
             <Wordmark />
-            <p
-              className="mt-6 text-lg leading-snug italic font-semibold"
-              style={{ color: TOKENS.cream, fontFamily: "'Manrope', system-ui", fontStyle: "normal" }}
-            >
-              "We don't just drive the miles. We drive the last one — the one
-              that makes sure somebody gets home safe."
+            <p style={{marginTop:24, fontSize:18, lineHeight:1.4, fontWeight:600, color:TOKENS.cream}}>
+              "We don't just drive the miles. We drive the last one — the one that makes sure somebody gets home safe."
             </p>
-            <p
-              className="mt-3 text-xs font-bold tracking-[0.15em] uppercase"
-              style={{ color: TOKENS.amber }}
-            >
+            <p style={{marginTop:12, fontSize:12, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", color:TOKENS.amber}}>
               One Community. One Mission. One Movement.
             </p>
-            <div className="mt-4">
-              <ConvoyStrip count={9} />
-            </div>
+            <div style={{marginTop:16}}><ConvoyStrip /></div>
           </div>
-          <div className="flex flex-col gap-3">
-            <PrimaryButton onClick={() => setRoute("signup")}>
-              I'm a driver — join TBULD
-            </PrimaryButton>
-            <button
-              onClick={() => setRoute("adminLogin")}
-              className="text-xs font-semibold py-2 flex items-center justify-center gap-1.5"
-              style={{ color: "rgba(255,246,236,0.55)" }}
-            >
-              <Lock size={12} /> Admin access
+          <div style={{display:"flex", flexDirection:"column", gap:12}}>
+            <PrimaryButton onClick={() => setRoute("signup")}>I'm a driver — join TBULD</PrimaryButton>
+            <button onClick={() => setRoute("adminLogin")} style={{background:"none",border:"none",fontSize:12,fontWeight:700,color:"rgba(255,246,236,0.55)",padding:"8px"}}>
+              🔒 Admin access
             </button>
           </div>
         </div>
-        <Skyline />
       </Screen>
     );
   }
 
-  // ---------- DRIVER SIGNUP ----------
   if (route === "signup") {
     return (
       <Screen>
         <TopBar title="Join TBULD" onBack={() => setRoute("welcome")} />
-        <div className="flex-1 px-6 flex flex-col gap-4 pt-2">
-          <p className="text-sm" style={{ color: "rgba(255,246,236,0.7)" }}>
-            TBULD community pros review every request — keeps this to real
-            drivers only.
-          </p>
-          <input
-            placeholder="Your name"
-            value={signupName}
-            onChange={(e) => setSignupName(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-md outline-none text-sm font-medium"
-            style={{ background: "rgba(255,255,255,0.08)", color: TOKENS.cream }}
-          />
-          <input
-            placeholder="Phone or email"
-            value={signupPhone}
-            onChange={(e) => setSignupPhone(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-md outline-none text-sm font-medium"
-            style={{ background: "rgba(255,255,255,0.08)", color: TOKENS.cream }}
-          />
-          <PrimaryButton
-            disabled={!signupName.trim() || !signupPhone.trim()}
-            onClick={() => {
-              const id = "d" + Date.now();
-              const next = {
-                ...data,
-                drivers: [
-                  ...data.drivers,
-                  { id, name: signupName.trim(), phone: signupPhone.trim(), status: "pending" },
-                ],
-              };
-              update(next);
-              setMe(id);
-              setRoute("pending");
-            }}
-          >
-            Request access
-          </PrimaryButton>
+        <div style={{flex:1,padding:"8px 24px 24px",display:"flex",flexDirection:"column",gap:16}}>
+          <p style={{fontSize:14,color:"rgba(255,246,236,0.7)"}}>TBULD community pros review every request — keeps this to real drivers only.</p>
+          <input placeholder="Your name" value={signupName} onChange={e=>setSignupName(e.target.value)} style={inputStyle} />
+          <input placeholder="Phone or email" value={signupPhone} onChange={e=>setSignupPhone(e.target.value)} style={inputStyle} />
+          <PrimaryButton disabled={!signupName.trim() || !signupPhone.trim()} onClick={() => {
+            const id = "d" + Date.now();
+            update({ ...data, drivers: [...data.drivers, { id, name: signupName.trim(), phone: signupPhone.trim(), status: "pending" }] });
+            setMe(id); setRoute("pending");
+          }}>Request access</PrimaryButton>
         </div>
       </Screen>
     );
   }
 
-  // ---------- PENDING APPROVAL ----------
   if (route === "pending") {
-    const myRecord = data.drivers.find((d) => d.id === me);
+    const myRecord = data.drivers.find(d => d.id === me);
     const approved = myRecord?.status === "approved";
     return (
       <Screen>
-        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: approved ? TOKENS.pink : "rgba(255,255,255,0.08)" }}
-          >
-            {approved ? <Check color={TOKENS.cream} /> : <Clock color={TOKENS.pinkLight} />}
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 32px",textAlign:"center",gap:16}}>
+          <div style={{width:64,height:64,borderRadius:999,display:"flex",alignItems:"center",justifyContent:"center",background: approved ? TOKENS.pink : "rgba(255,255,255,0.08)",fontSize:28}}>
+            {approved ? "✅" : "⏰"}
           </div>
-          <div className="font-bold text-lg" style={{ color: TOKENS.cream, fontFamily: "'Manrope', system-ui" }}>
-            {approved ? "You're in" : "Pending approval"}
-          </div>
-          <p className="text-sm" style={{ color: "rgba(255,246,236,0.65)" }}>
-            {approved
-              ? "Welcome to TBULD — here's your hub."
-              : "TBULD community pros are reviewing your request. Check back shortly."}
+          <div style={{fontWeight:800,fontSize:20,color:TOKENS.cream}}>{approved ? "You're in" : "Pending approval"}</div>
+          <p style={{fontSize:14,color:"rgba(255,246,236,0.65)"}}>
+            {approved ? "Welcome to TBULD — here's your hub." : "TBULD community pros are reviewing your request. Check back shortly."}
           </p>
-          {approved && (
-            <PrimaryButton onClick={() => { setRole("driver"); setRoute("hub"); }}>
-              Enter TBULD
-            </PrimaryButton>
-          )}
+          {approved && <PrimaryButton onClick={() => { setRole("driver"); setRoute("hub"); }}>Enter TBULD</PrimaryButton>}
         </div>
       </Screen>
     );
   }
 
-  // ---------- ADMIN LOGIN ----------
   if (route === "adminLogin") {
     return (
       <Screen>
         <TopBar title="Admin" onBack={() => setRoute("welcome")} />
-        <div className="flex-1 flex flex-col items-center justify-center px-8 gap-4 text-center">
-          <ShieldCheck size={32} color={TOKENS.pink} />
-          <p className="text-sm" style={{ color: "rgba(255,246,251,0.7)" }}>
-            Demo mode — real version will require your login.
-          </p>
-          <PrimaryButton
-            onClick={() => {
-              setRole("admin");
-              setRoute("hub");
-            }}
-          >
-            Enter as admin
-          </PrimaryButton>
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 32px",gap:16,textAlign:"center"}}>
+          <div style={{fontSize:32}}>🛡️</div>
+          <p style={{fontSize:14,color:"rgba(255,246,236,0.7)"}}>Demo mode — real version will require your login.</p>
+          <PrimaryButton onClick={() => { setRole("admin"); setRoute("hub"); }}>Enter as admin</PrimaryButton>
         </div>
       </Screen>
     );
   }
 
-  // ---------- HUB ----------
   if (route === "hub") {
     const tiles = [
-      { key: "events", label: "Events", icon: Calendar },
-      { key: "traffic", label: "Traffic", icon: Navigation },
-      { key: "work", label: "Where to Work", icon: MapPin },
-      { key: "buzz", label: "The Buzz", icon: Flame },
+      { key:"events", label:"Events", icon:"📅", sub:"This week's lineup, plus the archive" },
+      { key:"traffic", label:"Traffic", icon:"🧭", sub:"Live map + Sabrina's road notes" },
+      { key:"work", label:"Where to Work", icon:"📍", sub:"Best zones right now" },
+      { key:"buzz", label:"The Buzz", icon:"🔥", sub:"Industry news — good airport-line reading" },
     ];
     return (
       <Screen>
-        <div className="flex items-center justify-between px-6 pt-6 pb-2">
-          <Wordmark size="text-2xl" />
-          <button
-            onClick={() => {
-              setRoute("welcome");
-              setRole(null);
-              setMe(null);
-            }}
-            className="w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.08)" }}
-          >
-            <LogOut size={16} color={TOKENS.pinkLight} />
-          </button>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"24px 24px 8px"}}>
+          <Wordmark size="22px" />
+          <button onClick={() => { setRoute("welcome"); setRole(null); setMe(null); }}
+            style={{width:36,height:36,borderRadius:999,border:"none",background:"rgba(255,255,255,0.08)",fontSize:16}}>🚪</button>
         </div>
-        <div className="px-6 pt-4 flex flex-col gap-3 flex-1">
-          {tiles.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setRoute(t.key)}
-              className="w-full flex items-center gap-4 p-5 rounded-lg text-left"
-              style={{ background: "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,0.08)` }}
-            >
-              <div
-                className="w-12 h-12 rounded-md flex items-center justify-center flex-shrink-0"
-                style={{ background: `linear-gradient(135deg, ${TOKENS.sunOrange}, ${TOKENS.pink})` }}
-              >
-                <t.icon size={22} color={TOKENS.cream} />
-              </div>
+        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:12,flex:1}}>
+          {tiles.map(t => (
+            <button key={t.key} onClick={() => setRoute(t.key)}
+              style={{...cardStyle, display:"flex",alignItems:"center",gap:16,padding:20,textAlign:"left",cursor:"pointer"}}>
+              <div style={{width:48,height:48,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,
+                background:`linear-gradient(135deg, ${TOKENS.sunOrange}, ${TOKENS.pink})`}}>{t.icon}</div>
               <div>
-                <div className="font-bold text-base" style={{ color: TOKENS.cream }}>
-                  {t.label}
-                </div>
-                <div className="text-xs" style={{ color: "rgba(255,246,251,0.55)" }}>
-                  {t.key === "events" && "This week's lineup, plus the archive"}
-                  {t.key === "traffic" && "Live map + Sabrina's road notes"}
-                  {t.key === "work" && "Best zones right now"}
-                  {t.key === "buzz" && "Industry news — good airport-line reading"}
-                </div>
+                <div style={{fontWeight:800,fontSize:16,color:TOKENS.cream}}>{t.label}</div>
+                <div style={{fontSize:12,color:"rgba(255,246,236,0.55)"}}>{t.sub}</div>
               </div>
             </button>
           ))}
-
           {role === "admin" && (
-            <button
-              onClick={() => setRoute("adminPanel")}
-              className="w-full flex items-center gap-4 p-5 rounded-lg text-left mt-1"
-              style={{ background: "rgba(255,184,0,0.1)", border: `1px solid ${TOKENS.amber}44` }}
-            >
-              <div
-                className="w-12 h-12 rounded-md flex items-center justify-center flex-shrink-0"
-                style={{ background: TOKENS.amber }}
-              >
-                <Users size={22} color={TOKENS.bgDeep} />
-              </div>
+            <button onClick={() => setRoute("adminPanel")}
+              style={{display:"flex",alignItems:"center",gap:16,padding:20,textAlign:"left",borderRadius:12,marginTop:4,
+                background:"rgba(255,184,0,0.1)",border:`1px solid ${TOKENS.amber}44`}}>
+              <div style={{width:48,height:48,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,background:TOKENS.amber}}>👥</div>
               <div>
-                <div className="font-bold text-base" style={{ color: TOKENS.cream }}>
-                  Admin panel
-                </div>
-                <div className="text-xs" style={{ color: "rgba(255,246,251,0.55)" }}>
-                  {pendingDrivers.length} pending · post updates
-                </div>
+                <div style={{fontWeight:800,fontSize:16,color:TOKENS.cream}}>Admin panel</div>
+                <div style={{fontSize:12,color:"rgba(255,246,236,0.55)"}}>{pendingDrivers.length} pending · post updates</div>
               </div>
             </button>
           )}
         </div>
-        <div className="px-6 pb-8 pt-2 flex justify-center">
-          <ConvoyStrip count={11} />
-        </div>
+        <div style={{padding:"8px 24px 32px",display:"flex",justifyContent:"center"}}><ConvoyStrip count={11} /></div>
       </Screen>
     );
   }
 
-  // ---------- EVENTS ----------
   if (route === "events") {
     return (
       <Screen>
-        <TopBar title="Events" onBack={() => setRoute("hub")} right={<Calendar size={16} color={TOKENS.pinkLight} />} />
-        <div className="flex-1 px-6 pb-8 flex flex-col gap-3 overflow-y-auto">
-          {data.events.map((e) => (
-            <div key={e.id} className="p-4 rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }}>
-              <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TOKENS.amber }}>
-                {e.posted}
-              </div>
-              <div className="text-sm whitespace-pre-line leading-relaxed" style={{ color: TOKENS.cream }}>
-                {e.body}
-              </div>
+        <TopBar title="Events" onBack={() => setRoute("hub")} right="📅" />
+        <div style={{flex:1,padding:"0 24px 32px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto"}}>
+          {data.events.map(e => (
+            <div key={e.id} style={{...cardStyle,padding:16}}>
+              <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.amber}}>{e.posted}</div>
+              <div style={{fontSize:14,lineHeight:1.6,whiteSpace:"pre-line",color:TOKENS.cream}}>{e.body}</div>
             </div>
           ))}
         </div>
@@ -507,91 +289,49 @@ export default function TBULDApp() {
     );
   }
 
-  // ---------- TRAFFIC ----------
   if (route === "traffic") {
     return (
       <Screen>
-        <TopBar title="Traffic" onBack={() => setRoute("hub")} right={<Navigation size={16} color={TOKENS.pinkLight} />} />
-        <div className="flex-1 px-6 pb-8 flex flex-col gap-4">
-          <div
-            className="w-full h-36 rounded-lg flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.15)" }}
-          >
-            <span className="text-xs" style={{ color: "rgba(255,246,251,0.4)" }}>
-              Live map embed goes here
-            </span>
+        <TopBar title="Traffic" onBack={() => setRoute("hub")} right="🧭" />
+        <div style={{flex:1,padding:"0 24px 32px",display:"flex",flexDirection:"column",gap:16}}>
+          <div style={{width:"100%",height:144,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(255,255,255,0.05)",border:"1px dashed rgba(255,255,255,0.15)",color:"rgba(255,246,236,0.4)",fontSize:12}}>
+            Live map embed goes here
           </div>
-          <div className="p-4 rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }}>
-            <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TOKENS.amber }}>
-              Sabrina's notes · {data.traffic.updated}
-            </div>
-            <div className="text-sm whitespace-pre-line leading-relaxed" style={{ color: TOKENS.cream }}>
-              {data.traffic.body}
-            </div>
+          <div style={{...cardStyle,padding:16}}>
+            <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.amber}}>Sabrina's notes · {data.traffic.updated}</div>
+            <div style={{fontSize:14,lineHeight:1.6,whiteSpace:"pre-line",color:TOKENS.cream}}>{data.traffic.body}</div>
           </div>
         </div>
       </Screen>
     );
   }
 
-  // ---------- WHERE TO WORK ----------
   if (route === "work") {
     return (
       <Screen>
-        <TopBar title="Where to Work" onBack={() => setRoute("hub")} right={<MapPin size={16} color={TOKENS.pinkLight} />} />
-        <div className="flex-1 px-6 pb-8">
-          <div className="p-4 rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }}>
-            <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: TOKENS.amber }}>
-              Today's picks · {data.whereToWork.updated}
-            </div>
-            <div className="text-sm whitespace-pre-line leading-relaxed" style={{ color: TOKENS.cream }}>
-              {data.whereToWork.body}
-            </div>
+        <TopBar title="Where to Work" onBack={() => setRoute("hub")} right="📍" />
+        <div style={{flex:1,padding:"0 24px 32px"}}>
+          <div style={{...cardStyle,padding:16}}>
+            <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.amber}}>Today's picks · {data.whereToWork.updated}</div>
+            <div style={{fontSize:14,lineHeight:1.6,whiteSpace:"pre-line",color:TOKENS.cream}}>{data.whereToWork.body}</div>
           </div>
         </div>
       </Screen>
     );
   }
 
-  // ---------- THE BUZZ ----------
   if (route === "buzz") {
     return (
       <Screen>
-        <TopBar title="The Buzz" onBack={() => setRoute("hub")} right={<Flame size={16} color={TOKENS.amber} />} />
-        <div className="flex-1 px-6 pb-8 flex flex-col gap-3 overflow-y-auto">
-          <p className="text-xs mb-1" style={{ color: "rgba(255,246,236,0.55)" }}>
-            Rideshare industry news, curated for TBULD. Something to read while you wait.
-          </p>
-          {data.buzz.map((b) => (
-            <div
-              key={b.id}
-              className="p-4 rounded-lg"
-              style={{
-                background: "rgba(0,0,0,0.22)",
-                borderLeft: `3px solid ${TOKENS.amber}`,
-              }}
-            >
-              <div
-                className="text-[10px] font-extrabold uppercase tracking-widest mb-1.5"
-                style={{ color: TOKENS.amber }}
-              >
-                {b.tag}
-              </div>
-              <div
-                className="text-base font-extrabold leading-snug mb-1.5"
-                style={{ color: TOKENS.cream, fontFamily: "'Manrope', system-ui" }}
-              >
-                {b.headline}
-              </div>
-              <div
-                className="text-sm leading-relaxed mb-2"
-                style={{ color: "rgba(255,246,236,0.82)" }}
-              >
-                {b.body}
-              </div>
-              <div className="text-[11px] font-bold" style={{ color: TOKENS.pinkLight }}>
-                — {b.source}
-              </div>
+        <TopBar title="The Buzz" onBack={() => setRoute("hub")} right="🔥" />
+        <div style={{flex:1,padding:"0 24px 32px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto"}}>
+          <p style={{fontSize:12,color:"rgba(255,246,236,0.55)",marginBottom:4}}>Rideshare industry news, curated for TBULD. Something to read while you wait.</p>
+          {data.buzz.map(b => (
+            <div key={b.id} style={{padding:16,borderRadius:12,background:"rgba(0,0,0,0.22)",borderLeft:`3px solid ${TOKENS.amber}`}}>
+              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6,color:TOKENS.amber}}>{b.tag}</div>
+              <div style={{fontSize:16,fontWeight:800,lineHeight:1.3,marginBottom:6,color:TOKENS.cream}}>{b.headline}</div>
+              <div style={{fontSize:14,lineHeight:1.6,marginBottom:8,color:"rgba(255,246,236,0.82)"}}>{b.body}</div>
+              <div style={{fontSize:11,fontWeight:700,color:TOKENS.pinkLight}}>— {b.source}</div>
             </div>
           ))}
         </div>
@@ -599,108 +339,59 @@ export default function TBULDApp() {
     );
   }
 
-  // ---------- ADMIN PANEL ----------
   if (route === "adminPanel") {
     const post = (field) => {
       if (!draft[field].trim()) return;
       const next = { ...data };
       if (field === "events") {
-        next.events = [
-          { id: "e" + Date.now(), posted: "This week", body: draft.events.trim() },
-          ...next.events,
-        ];
+        next.events = [{ id:"e"+Date.now(), posted:"This week", body:draft.events.trim() }, ...next.events];
       } else if (field === "buzz") {
-        next.buzz = [
-          { id: "b" + Date.now(), tag: "TBULD PICK", headline: draft.buzz.trim().split("\n")[0], body: draft.buzz.trim(), source: "Sabrina" },
-          ...next.buzz,
-        ];
+        next.buzz = [{ id:"b"+Date.now(), tag:"TBULD PICK", headline:draft.buzz.trim().split("\n")[0], body:draft.buzz.trim(), source:"Sabrina" }, ...next.buzz];
       } else {
-        next[field] = { updated: "Just now", body: draft[field].trim() };
+        next[field] = { updated:"Just now", body:draft[field].trim() };
       }
       update(next);
       setDraft({ ...draft, [field]: "" });
     };
-
     const setStatus = (id, status) => {
-      const next = {
-        ...data,
-        drivers: data.drivers.map((d) => (d.id === id ? { ...d, status } : d)),
-      };
-      update(next);
+      update({ ...data, drivers: data.drivers.map(d => d.id === id ? { ...d, status } : d) });
     };
-
+    const fields = [
+      { key:"events", label:"Post this week's events", placeholder:"Paste your Thursday events post here…" },
+      { key:"traffic", label:"Update traffic notes", placeholder:"Construction, detours, event backups…" },
+      { key:"whereToWork", label:"Update where-to-work picks", placeholder:"Best zones right now…" },
+      { key:"buzz", label:"Post a Buzz story", placeholder:"Drop the story or a link + quick summary…" },
+    ];
     return (
       <Screen>
-        <TopBar title="Admin panel" onBack={() => setRoute("hub")} right={<Users size={16} color={TOKENS.amber} />} />
-        <div className="flex-1 px-6 pb-10 overflow-y-auto flex flex-col gap-6">
+        <TopBar title="Admin panel" onBack={() => setRoute("hub")} right="👥" />
+        <div style={{flex:1,padding:"0 24px 40px",overflowY:"auto",display:"flex",flexDirection:"column",gap:24}}>
           <div>
-            <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: TOKENS.pinkLight }}>
-              Pending drivers ({pendingDrivers.length})
-            </div>
-            <div className="flex flex-col gap-2">
-              {pendingDrivers.length === 0 && (
-                <div className="text-xs" style={{ color: "rgba(255,246,251,0.4)" }}>
-                  No one waiting right now.
-                </div>
-              )}
-              {pendingDrivers.map((d) => (
-                <div
-                  key={d.id}
-                  className="flex items-center justify-between p-3 rounded-md"
-                  style={{ background: "rgba(255,255,255,0.06)" }}
-                >
+            <div style={{fontSize:12,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.pinkLight}}>Pending drivers ({pendingDrivers.length})</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {pendingDrivers.length === 0 && <div style={{fontSize:12,color:"rgba(255,246,236,0.4)"}}>No one waiting right now.</div>}
+              {pendingDrivers.map(d => (
+                <div key={d.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:12,borderRadius:12,background:"rgba(255,255,255,0.06)"}}>
                   <div>
-                    <div className="text-sm font-semibold" style={{ color: TOKENS.cream }}>{d.name}</div>
-                    <div className="text-xs" style={{ color: "rgba(255,246,251,0.5)" }}>{d.phone}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:TOKENS.cream}}>{d.name}</div>
+                    <div style={{fontSize:12,color:"rgba(255,246,236,0.5)"}}>{d.phone}</div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setStatus(d.id, "approved")}
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ background: TOKENS.pink }}
-                    >
-                      <Check size={14} color={TOKENS.cream} />
-                    </button>
-                    <button
-                      onClick={() => setStatus(d.id, "denied")}
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ background: "rgba(255,255,255,0.1)" }}
-                    >
-                      <X size={14} color={TOKENS.pinkLight} />
-                    </button>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={() => setStatus(d.id,"approved")} style={{width:32,height:32,borderRadius:999,border:"none",background:TOKENS.pink,color:TOKENS.cream}}>✓</button>
+                    <button onClick={() => setStatus(d.id,"denied")} style={{width:32,height:32,borderRadius:999,border:"none",background:"rgba(255,255,255,0.1)",color:TOKENS.pinkLight}}>✕</button>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="text-xs mt-2" style={{ color: "rgba(255,246,251,0.4)" }}>
-              {approvedDrivers.length} approved driver{approvedDrivers.length === 1 ? "" : "s"}
-            </div>
+            <div style={{fontSize:12,marginTop:8,color:"rgba(255,246,236,0.4)"}}>{approvedDrivers.length} approved driver{approvedDrivers.length===1?"":"s"}</div>
           </div>
-
-          {[
-            { key: "events", label: "Post this week's events", placeholder: "Paste your Thursday events post here…" },
-            { key: "traffic", label: "Update traffic notes", placeholder: "Construction, detours, event backups…" },
-            { key: "whereToWork", label: "Update where-to-work picks", placeholder: "Best zones right now…" },
-            { key: "buzz", label: "Post a Buzz story", placeholder: "Drop the story or a link + quick summary…" },
-          ].map((f) => (
+          {fields.map(f => (
             <div key={f.key}>
-              <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: TOKENS.pinkLight }}>
-                {f.label}
-              </div>
-              <textarea
-                value={draft[f.key]}
-                onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
-                placeholder={f.placeholder}
-                rows={3}
-                className="w-full px-4 py-3 rounded-md outline-none text-sm resize-none"
-                style={{ background: "rgba(255,255,255,0.08)", color: TOKENS.cream }}
-              />
-              <button
-                onClick={() => post(f.key)}
-                className="mt-2 flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg"
-                style={{ background: TOKENS.pink, color: TOKENS.cream }}
-              >
-                <Send size={12} /> Post & notify drivers
+              <div style={{fontSize:12,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.pinkLight}}>{f.label}</div>
+              <textarea value={draft[f.key]} onChange={e=>setDraft({...draft,[f.key]:e.target.value})} placeholder={f.placeholder} rows={3}
+                style={{width:"100%",padding:"12px 16px",borderRadius:12,border:"none",outline:"none",fontSize:14,resize:"none",background:"rgba(255,255,255,0.08)",color:TOKENS.cream}} />
+              <button onClick={() => post(f.key)} style={{marginTop:8,display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:800,padding:"8px 16px",borderRadius:8,border:"none",background:TOKENS.pink,color:TOKENS.cream}}>
+                📤 Post &amp; notify drivers
               </button>
             </div>
           ))}
@@ -712,12 +403,7 @@ export default function TBULDApp() {
   return null;
 }
 
-// Inject fonts once
-if (typeof document !== "undefined" && !document.getElementById("tbuld-fonts")) {
-  const style = document.createElement("style");
-  style.id = "tbuld-fonts";
-  style.textContent = FONT_IMPORT;
-  document.head.appendChild(style);
-}
-no
-                
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
