@@ -12,12 +12,13 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body, #root { height: 100%; margin: 0; }
   body { font-family: 'Manrope', system-ui, sans-serif; background: #1B1440; }
-  textarea, input { font-family: 'Manrope', system-ui, sans-serif; }
+  textarea, input, select { font-family: 'Manrope', system-ui, sans-serif; }
   ::placeholder { color: rgba(255,246,236,0.4); }
 </style>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -25,59 +26,21 @@
 <script type="text/babel" data-type="module">
 const { useState, useEffect } = React;
 
+const SUPABASE_URL = "https://jpdtmjvbudefyzfkwbvj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_3MwI0OBMCgmfFIuRTdoluA_yZFndtnR";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ADMIN_PASSWORD = "Cluckchuck2330@@";
+
 const TOKENS = {
-  bgDeep: "#1B1440",
-  bgDeep2: "#3A1A4E",
-  sunOrange: "#FF7A1A",
-  sunRed: "#FF3D3D",
-  pink: "#EC1E7A",
-  pinkLight: "#FFC1DE",
-  amber: "#FFB800",
-  cream: "#FFF6EC",
+  bgDeep: "#1B1440", bgDeep2: "#3A1A4E", sunOrange: "#FF7A1A", sunRed: "#FF3D3D",
+  pink: "#EC1E7A", pinkLight: "#FFC1DE", amber: "#FFB800", cream: "#FFF6EC",
 };
 const SUNSET_BG = `linear-gradient(180deg, ${TOKENS.bgDeep} 0%, ${TOKENS.bgDeep2} 32%, ${TOKENS.sunRed} 68%, ${TOKENS.sunOrange} 100%)`;
 
-const STORAGE_KEY = "tbuld_app_data_v1";
-
-const DEFAULT_DATA = {
-  events: [
-    { id: "e1", posted: "This week",
-      body: "Reggae Rise Up Fest — Raymond James Stadium lot, Fri–Sun nights\nTampa Bay Lightning vs Panthers — Amalie Arena, Thu 7pm\nOrlando Magic home game — Kia Center, Sat 7:30pm\nMatt Rife comedy — Yuengling Center, Fri 8pm" }
-  ],
-  traffic: { updated: "Today",
-    body: "I-4 westbound construction near Dale Mabry, expect delays 3–7pm.\nGandy Bridge slow both directions during Lightning game traffic.\nAvoid Selmon Expressway exit 3 after 9pm Fri/Sat — event backup." },
-  whereToWork: { updated: "Today",
-    body: "Downtown Tampa: strong after 6pm, event traffic tonight.\nIVE / Ybor: good weekend late-night pickups.\nOrlando I-Drive: steady all day, airport runs pay well before noon." },
-  buzz: [
-    { id: "b1", tag: "PLATFORM MOVE", headline: "Lyft hands drivers more control over their app",
-      body: "Lyft is rolling back its black-box dispatch system, letting drivers pick trip types, stack incentives, and manage their own territory instead of just taking whatever the algorithm sends.",
-      source: "The Rideshare Guy" },
-    { id: "b2", tag: "MONEY", headline: "Drivers cashing in on a $328M back-pay settlement",
-      body: "Uber and Lyft settled with regulators after years of shorting driver pay — checks are going out to eligible drivers now.",
-      source: "CBS News" },
-    { id: "b3", tag: "ROBOTAXI WATCH", headline: "Driverless cars are creeping into more cities",
-      body: "Uber and Lyft are both quietly building robotaxi partnerships, testing autonomous rides in select markets while still relying on human drivers everywhere else — for now.",
-      source: "NewsNation" },
-    { id: "b4", tag: "TAX SEASON", headline: "New tip deduction could put real money back in your pocket",
-      body: "A new federal deduction lets self-employed drivers write off up to $25,000 a year in reported tips — worth checking with your tax person before filing.",
-      source: "Jackson Hewitt" }
-  ],
-  drivers: [{ id: "d1", name: "Marcus D.", phone: "813-555-0110", status: "pending" }],
-};
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : DEFAULT_DATA;
-  } catch { return DEFAULT_DATA; }
-}
-function saveData(data) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
-}
-
-function Icon({ children, size=20 }) {
-  return <span style={{fontSize:size, lineHeight:1, display:"inline-block"}}>{children}</span>;
-}
+const SESSION_KEY = "tbuld_driver_session";
+const ADMIN_SESSION_KEY = "tbuld_admin_session";
+const AREAS = ["Tampa", "St. Petersburg", "Clearwater", "Other Tampa Bay Area"];
 
 function ConvoyStrip({ count=9 }) {
   const colors = [TOKENS.sunOrange, TOKENS.pink, TOKENS.amber];
@@ -93,12 +56,8 @@ function ConvoyStrip({ count=9 }) {
 function Wordmark({ size="32px" }) {
   return (
     <div>
-      <div style={{fontSize:size, fontWeight:800, letterSpacing:"-0.01em", color:TOKENS.cream, textTransform:"uppercase", lineHeight:1}}>
-        TBULD
-      </div>
-      <div style={{fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", marginTop:4, fontWeight:700, color:TOKENS.pinkLight}}>
-        Tampa Bay · Uber &amp; Lyft Drivers
-      </div>
+      <div style={{fontSize:size, fontWeight:800, letterSpacing:"-0.01em", color:TOKENS.cream, textTransform:"uppercase", lineHeight:1}}>TBULD</div>
+      <div style={{fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", marginTop:4, fontWeight:700, color:TOKENS.pinkLight}}>Tampa Bay · Uber &amp; Lyft Drivers</div>
     </div>
   );
 }
@@ -106,24 +65,16 @@ function Wordmark({ size="32px" }) {
 function PrimaryButton({ children, onClick, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled}
-      style={{
-        width:"100%", padding:"14px", borderRadius:12, fontWeight:800, fontSize:16,
-        border:"none", color:TOKENS.cream,
+      style={{width:"100%", padding:"14px", borderRadius:12, fontWeight:800, fontSize:16, border:"none", color:TOKENS.cream,
         background: disabled ? "#4a3a5c" : `linear-gradient(135deg, ${TOKENS.sunOrange}, ${TOKENS.pink})`,
-        boxShadow: disabled ? "none" : `0 6px 20px -6px ${TOKENS.sunRed}99`,
-        opacity: disabled ? 0.4 : 1,
-      }}>
+        boxShadow: disabled ? "none" : `0 6px 20px -6px ${TOKENS.sunRed}99`, opacity: disabled ? 0.4 : 1}}>
       {children}
     </button>
   );
 }
 
 function Screen({ children }) {
-  return (
-    <div style={{width:"100%", minHeight:"100vh", display:"flex", flexDirection:"column", background:SUNSET_BG}}>
-      {children}
-    </div>
-  );
+  return <div style={{width:"100%", minHeight:"100vh", display:"flex", flexDirection:"column", background:SUNSET_BG}}>{children}</div>;
 }
 
 function TopBar({ title, onBack, right }) {
@@ -136,28 +87,183 @@ function TopBar({ title, onBack, right }) {
   );
 }
 
+const cardStyle = { background:"rgba(255,255,255,0.06)", borderRadius:12, border:"1px solid rgba(255,255,255,0.08)" };
+const inputStyle = { width:"100%", padding:"14px 16px", borderRadius:12, border:"none", outline:"none", fontSize:14, fontWeight:600, background:"rgba(255,255,255,0.08)", color:TOKENS.cream };
+
+async function uploadFile(file, prefix) {
+  if (!file) return null;
+  const path = `${prefix}-${Date.now()}-${file.name}`;
+  const { error } = await sb.storage.from("uploads").upload(path, file);
+  if (error) { console.error(error); return null; }
+  const { data } = sb.storage.from("uploads").getPublicUrl(path);
+  return data.publicUrl;
+}
+
 function App() {
-  const [data, setData] = useState(loadData());
   const [route, setRoute] = useState("welcome");
+  const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
   const [me, setMe] = useState(null);
+  const [drivers, setDrivers] = useState([]);
+  const [content, setContent] = useState({ events: [], traffic: {}, whereToWork: {}, buzz: [] });
+
   const [signupName, setSignupName] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
+  const [signupPin, setSignupPin] = useState("");
+  const [signupArea, setSignupArea] = useState(AREAS[0]);
+  const [signupZip, setSignupZip] = useState("");
+  const [signupPlatform, setSignupPlatform] = useState("Uber");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [verifyFile, setVerifyFile] = useState(null);
+  const [signupBusy, setSignupBusy] = useState(false);
+  const [signupError, setSignupError] = useState("");
+
+  const [loginPhone, setLoginPhone] = useState("");
+  const [loginPin, setLoginPin] = useState("");
+  const [loginError, setLoginError] = useState("");
+
+  const [adminPwInput, setAdminPwInput] = useState("");
+  const [adminError, setAdminError] = useState("");
+
   const [draft, setDraft] = useState({ events:"", traffic:"", whereToWork:"", buzz:"" });
+  const [reportMsg, setReportMsg] = useState("");
+  const [reportSent, setReportSent] = useState(false);
 
-  useEffect(() => { saveData(data); }, [data]);
+  async function loadDrivers() {
+    const { data } = await sb.from("drivers").select("*").order("created_at", { ascending: false });
+    setDrivers(data || []);
+  }
+  async function loadContent() {
+    const { data } = await sb.from("app_content").select("*");
+    if (!data) return;
+    const next = {};
+    data.forEach(row => { next[row.key] = row.value; });
+    setContent({
+      events: next.events || [],
+      traffic: next.traffic || {},
+      whereToWork: next.whereToWork || {},
+      buzz: next.buzz || [],
+    });
+  }
 
-  const update = (next) => setData(next);
-  const approvedDrivers = data.drivers.filter(d => d.status === "approved");
-  const pendingDrivers = data.drivers.filter(d => d.status === "pending");
+  useEffect(() => {
+    (async () => {
+      await Promise.all([loadDrivers(), loadContent()]);
+      const savedDriver = localStorage.getItem(SESSION_KEY);
+      const savedAdmin = localStorage.getItem(ADMIN_SESSION_KEY);
+      if (savedAdmin === "true") { setRole("admin"); setRoute("hub"); }
+      else if (savedDriver) {
+        setMe(savedDriver);
+        setRole("driver");
+        setRoute("hub");
+      }
+      setLoading(false);
+    })();
+  }, []);
 
-  const cardStyle = { background:"rgba(255,255,255,0.06)", borderRadius:12, border:"1px solid rgba(255,255,255,0.08)" };
-  const inputStyle = { width:"100%", padding:"14px 16px", borderRadius:12, border:"none", outline:"none", fontSize:14, fontWeight:600, background:"rgba(255,255,255,0.08)", color:TOKENS.cream };
+  const pendingDrivers = drivers.filter(d => d.status === "pending");
+  const approvedDrivers = drivers.filter(d => d.status === "approved");
+  const myRecord = drivers.find(d => d.id === me);
 
+  async function handleSignup() {
+    setSignupError("");
+    if (!signupName.trim() || !signupPhone.trim() || !signupPin.trim()) {
+      setSignupError("Name, phone, and PIN are required.");
+      return;
+    }
+    setSignupBusy(true);
+    const photoUrl = await uploadFile(photoFile, "photo");
+    const verifyUrl = await uploadFile(verifyFile, "verify");
+    const { data, error } = await sb.from("drivers").insert({
+      name: signupName.trim(), phone: signupPhone.trim(), pin: signupPin.trim(),
+      area: signupArea, zip: signupZip.trim(), platform: signupPlatform,
+      photo_url: photoUrl, verification_url: verifyUrl, status: "pending",
+    }).select().single();
+    setSignupBusy(false);
+    if (error) { setSignupError("Something went wrong. Try again."); return; }
+    setMe(data.id);
+    localStorage.setItem(SESSION_KEY, data.id);
+    await loadDrivers();
+    setRoute("pending");
+  }
+
+  async function handleLogin() {
+    setLoginError("");
+    const match = drivers.find(d => d.phone === loginPhone.trim() && d.pin === loginPin.trim());
+    if (!match) { setLoginError("Phone or PIN doesn't match. Try again."); return; }
+    setMe(match.id);
+    localStorage.setItem(SESSION_KEY, match.id);
+    setRole("driver");
+    setRoute(match.status === "approved" ? "hub" : "pending");
+  }
+
+  function handleAdminSubmit() {
+    if (adminPwInput === ADMIN_PASSWORD) {
+      localStorage.setItem(ADMIN_SESSION_KEY, "true");
+      setRole("admin");
+      setRoute("hub");
+    } else {
+      setAdminError("Wrong password.");
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    setRole(null); setMe(null); setRoute("welcome");
+  }
+
+  async function setDriverStatus(id, status) {
+    await sb.from("drivers").update({ status }).eq("id", id);
+    await loadDrivers();
+  }
+  async function removeDriver(id) {
+    await sb.from("drivers").delete().eq("id", id);
+    await loadDrivers();
+  }
+
+  async function postContent(field) {
+    if (!draft[field].trim()) return;
+    if (field === "events") {
+      const next = [{ id: "e"+Date.now(), posted: "This week", body: draft.events.trim() }, ...content.events];
+      await sb.from("app_content").update({ value: next, updated_at: new Date() }).eq("key", "events");
+      setContent({ ...content, events: next });
+    } else if (field === "buzz") {
+      const next = [{ id: "b"+Date.now(), tag: "TBULD PICK", headline: draft.buzz.trim().split("\n")[0], body: draft.buzz.trim(), source: "TBULD" }, ...content.buzz];
+      await sb.from("app_content").update({ value: next, updated_at: new Date() }).eq("key", "buzz");
+      setContent({ ...content, buzz: next });
+    } else {
+      const next = { updated: "Just now", body: draft[field].trim() };
+      await sb.from("app_content").update({ value: next, updated_at: new Date() }).eq("key", field);
+      setContent({ ...content, [field]: next });
+    }
+    setDraft({ ...draft, [field]: "" });
+  }
+
+  async function sendReport() {
+    if (!reportMsg.trim()) return;
+    await sb.from("reports").insert({
+      driver_name: myRecord?.name || "Unknown",
+      driver_phone: myRecord?.phone || "Unknown",
+      message: reportMsg.trim(),
+    });
+    setReportSent(true);
+    setReportMsg("");
+  }
+
+  if (loading) {
+    return <Screen><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}><ConvoyStrip /></div></Screen>;
+  }
+
+  // ---------- WELCOME ----------
   if (route === "welcome") {
     return (
       <Screen>
-        <div style={{flex:1, display:"flex", flexDirection:"column", justifyContent:"space-between", padding:"40px 24px"}}>
+        <div style={{flex:1, display:"flex", flexDirection:"column", justifyContent:"space-between", padding:"40px 24px", position:"relative"}}>
+          <button onClick={() => setRoute("adminGate")}
+            style={{position:"absolute", top:16, right:16, width:28, height:28, borderRadius:999, border:"none", background:"rgba(255,255,255,0.06)", fontSize:12, opacity:0.5}}>
+            🔒
+          </button>
           <div />
           <div>
             <Wordmark />
@@ -171,8 +277,8 @@ function App() {
           </div>
           <div style={{display:"flex", flexDirection:"column", gap:12}}>
             <PrimaryButton onClick={() => setRoute("signup")}>I'm a driver — join TBULD</PrimaryButton>
-            <button onClick={() => setRoute("adminLogin")} style={{background:"none",border:"none",fontSize:12,fontWeight:700,color:"rgba(255,246,236,0.55)",padding:"8px"}}>
-              🔒 Admin access
+            <button onClick={() => setRoute("login")} style={{background:"none",border:"none",fontSize:13,fontWeight:700,color:"rgba(255,246,236,0.7)",padding:"8px"}}>
+              Already signed up? Log in
             </button>
           </div>
         </div>
@@ -180,26 +286,71 @@ function App() {
     );
   }
 
-  if (route === "signup") {
+  // ---------- ADMIN GATE ----------
+  if (route === "adminGate") {
     return (
       <Screen>
-        <TopBar title="Join TBULD" onBack={() => setRoute("welcome")} />
-        <div style={{flex:1,padding:"8px 24px 24px",display:"flex",flexDirection:"column",gap:16}}>
-          <p style={{fontSize:14,color:"rgba(255,246,236,0.7)"}}>TBULD community pros review every request — keeps this to real drivers only.</p>
-          <input placeholder="Your name" value={signupName} onChange={e=>setSignupName(e.target.value)} style={inputStyle} />
-          <input placeholder="Phone or email" value={signupPhone} onChange={e=>setSignupPhone(e.target.value)} style={inputStyle} />
-          <PrimaryButton disabled={!signupName.trim() || !signupPhone.trim()} onClick={() => {
-            const id = "d" + Date.now();
-            update({ ...data, drivers: [...data.drivers, { id, name: signupName.trim(), phone: signupPhone.trim(), status: "pending" }] });
-            setMe(id); setRoute("pending");
-          }}>Request access</PrimaryButton>
+        <TopBar title="Admin" onBack={() => setRoute("welcome")} />
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 32px",gap:16,textAlign:"center"}}>
+          <div style={{fontSize:32}}>🛡️</div>
+          <input type="password" placeholder="Admin password" value={adminPwInput}
+            onChange={e=>setAdminPwInput(e.target.value)} style={inputStyle} />
+          {adminError && <div style={{color:TOKENS.pink, fontSize:12}}>{adminError}</div>}
+          <PrimaryButton onClick={handleAdminSubmit}>Enter</PrimaryButton>
         </div>
       </Screen>
     );
   }
 
+  // ---------- LOGIN ----------
+  if (route === "login") {
+    return (
+      <Screen>
+        <TopBar title="Log In" onBack={() => setRoute("welcome")} />
+        <div style={{flex:1,padding:"8px 24px 24px",display:"flex",flexDirection:"column",gap:16}}>
+          <input placeholder="Phone number" value={loginPhone} onChange={e=>setLoginPhone(e.target.value)} style={inputStyle} />
+          <input type="password" placeholder="Your PIN" value={loginPin} onChange={e=>setLoginPin(e.target.value)} style={inputStyle} />
+          {loginError && <div style={{color:TOKENS.pink, fontSize:12}}>{loginError}</div>}
+          <PrimaryButton onClick={handleLogin}>Log In</PrimaryButton>
+        </div>
+      </Screen>
+    );
+  }
+
+  // ---------- SIGNUP ----------
+  if (route === "signup") {
+    return (
+      <Screen>
+        <TopBar title="Join TBULD" onBack={() => setRoute("welcome")} />
+        <div style={{flex:1,padding:"8px 24px 24px",display:"flex",flexDirection:"column",gap:14,overflowY:"auto"}}>
+          <p style={{fontSize:14,color:"rgba(255,246,236,0.7)"}}>TBULD community pros review every request — keeps this to real Tampa Bay drivers only.</p>
+          <input placeholder="Your name" value={signupName} onChange={e=>setSignupName(e.target.value)} style={inputStyle} />
+          <input placeholder="Phone number" value={signupPhone} onChange={e=>setSignupPhone(e.target.value)} style={inputStyle} />
+          <input type="password" placeholder="Set a PIN (for logging back in)" value={signupPin} onChange={e=>setSignupPin(e.target.value)} style={inputStyle} />
+          <select value={signupArea} onChange={e=>setSignupArea(e.target.value)} style={inputStyle}>
+            {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+          <input placeholder="Zip code" value={signupZip} onChange={e=>setSignupZip(e.target.value)} style={inputStyle} />
+          <select value={signupPlatform} onChange={e=>setSignupPlatform(e.target.value)} style={inputStyle}>
+            <option>Uber</option><option>Lyft</option><option>Both</option>
+          </select>
+          <div>
+            <div style={{fontSize:12,color:"rgba(255,246,236,0.6)",marginBottom:6}}>Profile photo</div>
+            <input type="file" accept="image/*" onChange={e=>setPhotoFile(e.target.files[0])} style={{color:TOKENS.cream, fontSize:12}} />
+          </div>
+          <div>
+            <div style={{fontSize:12,color:"rgba(255,246,236,0.6)",marginBottom:6}}>Screenshot of your driver profile or recent trips</div>
+            <input type="file" accept="image/*" onChange={e=>setVerifyFile(e.target.files[0])} style={{color:TOKENS.cream, fontSize:12}} />
+          </div>
+          {signupError && <div style={{color:TOKENS.pink, fontSize:12}}>{signupError}</div>}
+          <PrimaryButton disabled={signupBusy} onClick={handleSignup}>{signupBusy ? "Submitting…" : "Request access"}</PrimaryButton>
+        </div>
+      </Screen>
+    );
+  }
+
+  // ---------- PENDING ----------
   if (route === "pending") {
-    const myRecord = data.drivers.find(d => d.id === me);
     const approved = myRecord?.status === "approved";
     return (
       <Screen>
@@ -211,38 +362,28 @@ function App() {
           <p style={{fontSize:14,color:"rgba(255,246,236,0.65)"}}>
             {approved ? "Welcome to TBULD — here's your hub." : "TBULD community pros are reviewing your request. Check back shortly."}
           </p>
-          {approved && <PrimaryButton onClick={() => { setRole("driver"); setRoute("hub"); }}>Enter TBULD</PrimaryButton>}
+          {approved
+            ? <PrimaryButton onClick={() => { setRole("driver"); setRoute("hub"); }}>Enter TBULD</PrimaryButton>
+            : <button onClick={async () => { await loadDrivers(); }} style={{background:"none",border:"none",color:TOKENS.pinkLight,fontSize:13,fontWeight:700}}>Refresh status</button>}
         </div>
       </Screen>
     );
   }
 
-  if (route === "adminLogin") {
-    return (
-      <Screen>
-        <TopBar title="Admin" onBack={() => setRoute("welcome")} />
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 32px",gap:16,textAlign:"center"}}>
-          <div style={{fontSize:32}}>🛡️</div>
-          <p style={{fontSize:14,color:"rgba(255,246,236,0.7)"}}>Demo mode — real version will require your login.</p>
-          <PrimaryButton onClick={() => { setRole("admin"); setRoute("hub"); }}>Enter as admin</PrimaryButton>
-        </div>
-      </Screen>
-    );
-  }
-
+  // ---------- HUB ----------
   if (route === "hub") {
     const tiles = [
       { key:"events", label:"Events", icon:"📅", sub:"This week's lineup, plus the archive" },
-      { key:"traffic", label:"Traffic", icon:"🧭", sub:"Live map + Sabrina's road notes" },
+      { key:"traffic", label:"Traffic", icon:"🧭", sub:"Live map + road notes" },
       { key:"work", label:"Where to Work", icon:"📍", sub:"Best zones right now" },
       { key:"buzz", label:"The Buzz", icon:"🔥", sub:"Industry news — good airport-line reading" },
+      { key:"report", label:"Report / Contact", icon:"✉️", sub:"Reach the TBULD team directly" },
     ];
     return (
       <Screen>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"24px 24px 8px"}}>
           <Wordmark size="22px" />
-          <button onClick={() => { setRoute("welcome"); setRole(null); setMe(null); }}
-            style={{width:36,height:36,borderRadius:999,border:"none",background:"rgba(255,255,255,0.08)",fontSize:16}}>🚪</button>
+          <button onClick={logout} style={{width:36,height:36,borderRadius:999,border:"none",background:"rgba(255,255,255,0.08)",fontSize:16}}>🚪</button>
         </div>
         <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:12,flex:1}}>
           {tiles.map(t => (
@@ -278,7 +419,7 @@ function App() {
       <Screen>
         <TopBar title="Events" onBack={() => setRoute("hub")} right="📅" />
         <div style={{flex:1,padding:"0 24px 32px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto"}}>
-          {data.events.map(e => (
+          {content.events.map(e => (
             <div key={e.id} style={{...cardStyle,padding:16}}>
               <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.amber}}>{e.posted}</div>
               <div style={{fontSize:14,lineHeight:1.6,whiteSpace:"pre-line",color:TOKENS.cream}}>{e.body}</div>
@@ -298,8 +439,8 @@ function App() {
             Live map embed goes here
           </div>
           <div style={{...cardStyle,padding:16}}>
-            <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.amber}}>Sabrina's notes · {data.traffic.updated}</div>
-            <div style={{fontSize:14,lineHeight:1.6,whiteSpace:"pre-line",color:TOKENS.cream}}>{data.traffic.body}</div>
+            <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.amber}}>Updated · {content.traffic.updated}</div>
+            <div style={{fontSize:14,lineHeight:1.6,whiteSpace:"pre-line",color:TOKENS.cream}}>{content.traffic.body}</div>
           </div>
         </div>
       </Screen>
@@ -312,8 +453,8 @@ function App() {
         <TopBar title="Where to Work" onBack={() => setRoute("hub")} right="📍" />
         <div style={{flex:1,padding:"0 24px 32px"}}>
           <div style={{...cardStyle,padding:16}}>
-            <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.amber}}>Today's picks · {data.whereToWork.updated}</div>
-            <div style={{fontSize:14,lineHeight:1.6,whiteSpace:"pre-line",color:TOKENS.cream}}>{data.whereToWork.body}</div>
+            <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.amber}}>Today's picks · {content.whereToWork.updated}</div>
+            <div style={{fontSize:14,lineHeight:1.6,whiteSpace:"pre-line",color:TOKENS.cream}}>{content.whereToWork.body}</div>
           </div>
         </div>
       </Screen>
@@ -325,8 +466,8 @@ function App() {
       <Screen>
         <TopBar title="The Buzz" onBack={() => setRoute("hub")} right="🔥" />
         <div style={{flex:1,padding:"0 24px 32px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto"}}>
-          <p style={{fontSize:12,color:"rgba(255,246,236,0.55)",marginBottom:4}}>Rideshare industry news, curated for TBULD. Something to read while you wait.</p>
-          {data.buzz.map(b => (
+          <p style={{fontSize:12,color:"rgba(255,246,236,0.55)",marginBottom:4}}>Rideshare industry news, curated for TBULD.</p>
+          {content.buzz.map(b => (
             <div key={b.id} style={{padding:16,borderRadius:12,background:"rgba(0,0,0,0.22)",borderLeft:`3px solid ${TOKENS.amber}`}}>
               <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6,color:TOKENS.amber}}>{b.tag}</div>
               <div style={{fontSize:16,fontWeight:800,lineHeight:1.3,marginBottom:6,color:TOKENS.cream}}>{b.headline}</div>
@@ -339,23 +480,30 @@ function App() {
     );
   }
 
+  if (route === "report") {
+    return (
+      <Screen>
+        <TopBar title="Report / Contact" onBack={() => setRoute("hub")} right="✉️" />
+        <div style={{flex:1,padding:"8px 24px 24px",display:"flex",flexDirection:"column",gap:14}}>
+          {reportSent ? (
+            <div style={{...cardStyle,padding:16,textAlign:"center"}}>
+              <div style={{fontSize:14,color:TOKENS.cream}}>Sent — thanks, the TBULD team will follow up.</div>
+            </div>
+          ) : (
+            <>
+              <p style={{fontSize:14,color:"rgba(255,246,236,0.7)"}}>Report a problem or send a message directly to the TBULD team.</p>
+              <textarea rows={5} value={reportMsg} onChange={e=>setReportMsg(e.target.value)} placeholder="What's going on?"
+                style={{...inputStyle, resize:"none"}} />
+              <PrimaryButton onClick={sendReport}>Send</PrimaryButton>
+            </>
+          )}
+        </div>
+      </Screen>
+    );
+  }
+
+  // ---------- ADMIN PANEL ----------
   if (route === "adminPanel") {
-    const post = (field) => {
-      if (!draft[field].trim()) return;
-      const next = { ...data };
-      if (field === "events") {
-        next.events = [{ id:"e"+Date.now(), posted:"This week", body:draft.events.trim() }, ...next.events];
-      } else if (field === "buzz") {
-        next.buzz = [{ id:"b"+Date.now(), tag:"TBULD PICK", headline:draft.buzz.trim().split("\n")[0], body:draft.buzz.trim(), source:"Sabrina" }, ...next.buzz];
-      } else {
-        next[field] = { updated:"Just now", body:draft[field].trim() };
-      }
-      update(next);
-      setDraft({ ...draft, [field]: "" });
-    };
-    const setStatus = (id, status) => {
-      update({ ...data, drivers: data.drivers.map(d => d.id === id ? { ...d, status } : d) });
-    };
     const fields = [
       { key:"events", label:"Post this week's events", placeholder:"Paste your Thursday events post here…" },
       { key:"traffic", label:"Update traffic notes", placeholder:"Construction, detours, event backups…" },
@@ -371,26 +519,44 @@ function App() {
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {pendingDrivers.length === 0 && <div style={{fontSize:12,color:"rgba(255,246,236,0.4)"}}>No one waiting right now.</div>}
               {pendingDrivers.map(d => (
-                <div key={d.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:12,borderRadius:12,background:"rgba(255,255,255,0.06)"}}>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:700,color:TOKENS.cream}}>{d.name}</div>
-                    <div style={{fontSize:12,color:"rgba(255,246,236,0.5)"}}>{d.phone}</div>
+                <div key={d.id} style={{padding:12,borderRadius:12,background:"rgba(255,255,255,0.06)"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                    <div>
+                      <div style={{fontSize:14,fontWeight:700,color:TOKENS.cream}}>{d.name}</div>
+                      <div style={{fontSize:12,color:"rgba(255,246,236,0.5)"}}>{d.phone} · {d.area} {d.zip} · {d.platform}</div>
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={() => setDriverStatus(d.id,"approved")} style={{width:32,height:32,borderRadius:999,border:"none",background:TOKENS.pink,color:TOKENS.cream}}>✓</button>
+                      <button onClick={() => setDriverStatus(d.id,"denied")} style={{width:32,height:32,borderRadius:999,border:"none",background:"rgba(255,255,255,0.1)",color:TOKENS.pinkLight}}>✕</button>
+                    </div>
                   </div>
-                  <div style={{display:"flex",gap:8}}>
-                    <button onClick={() => setStatus(d.id,"approved")} style={{width:32,height:32,borderRadius:999,border:"none",background:TOKENS.pink,color:TOKENS.cream}}>✓</button>
-                    <button onClick={() => setStatus(d.id,"denied")} style={{width:32,height:32,borderRadius:999,border:"none",background:"rgba(255,255,255,0.1)",color:TOKENS.pinkLight}}>✕</button>
-                  </div>
+                  {(d.photo_url || d.verification_url) && (
+                    <div style={{display:"flex",gap:8}}>
+                      {d.photo_url && <a href={d.photo_url} target="_blank" style={{fontSize:11,color:TOKENS.pinkLight}}>View photo</a>}
+                      {d.verification_url && <a href={d.verification_url} target="_blank" style={{fontSize:11,color:TOKENS.pinkLight}}>View verification</a>}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-            <div style={{fontSize:12,marginTop:8,color:"rgba(255,246,236,0.4)"}}>{approvedDrivers.length} approved driver{approvedDrivers.length===1?"":"s"}</div>
+          </div>
+          <div>
+            <div style={{fontSize:12,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.pinkLight}}>Approved drivers ({approvedDrivers.length})</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {approvedDrivers.map(d => (
+                <div key={d.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:12,borderRadius:12,background:"rgba(255,255,255,0.06)"}}>
+                  <div style={{fontSize:13,color:TOKENS.cream}}>{d.name} <span style={{color:"rgba(255,246,236,0.5)"}}>· {d.area}</span></div>
+                  <button onClick={() => removeDriver(d.id)} style={{fontSize:11,fontWeight:700,color:TOKENS.pink,background:"none",border:"none"}}>Remove</button>
+                </div>
+              ))}
+            </div>
           </div>
           {fields.map(f => (
             <div key={f.key}>
               <div style={{fontSize:12,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,color:TOKENS.pinkLight}}>{f.label}</div>
               <textarea value={draft[f.key]} onChange={e=>setDraft({...draft,[f.key]:e.target.value})} placeholder={f.placeholder} rows={3}
-                style={{width:"100%",padding:"12px 16px",borderRadius:12,border:"none",outline:"none",fontSize:14,resize:"none",background:"rgba(255,255,255,0.08)",color:TOKENS.cream}} />
-              <button onClick={() => post(f.key)} style={{marginTop:8,display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:800,padding:"8px 16px",borderRadius:8,border:"none",background:TOKENS.pink,color:TOKENS.cream}}>
+                style={{...inputStyle, resize:"none"}} />
+              <button onClick={() => postContent(f.key)} style={{marginTop:8,display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:800,padding:"8px 16px",borderRadius:8,border:"none",background:TOKENS.pink,color:TOKENS.cream}}>
                 📤 Post &amp; notify drivers
               </button>
             </div>
